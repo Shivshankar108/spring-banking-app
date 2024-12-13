@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 
 import com.example.banking_app.dto.AccountInfo;
 import com.example.banking_app.dto.BankResponse;
+import com.example.banking_app.dto.EmailDetails;
 import com.example.banking_app.dto.UserRequest;
 import com.example.banking_app.entity.User;
 import com.example.banking_app.repository.UserRepo;
+import com.example.banking_app.service.EmailService;
 import com.example.banking_app.service.UserService;
 import com.example.banking_app.utils.AccountUtils;
 
@@ -18,8 +20,10 @@ import com.example.banking_app.utils.AccountUtils;
 public class UserServiceImpl implements UserService{
 
 	@Autowired
-	private UserRepo userRepo;
+	UserRepo userRepo;
 	
+	@Autowired
+	EmailService emailService;
 	
 	public UserServiceImpl(UserRepo userRepo) {
 		this.userRepo = userRepo;
@@ -53,6 +57,16 @@ public class UserServiceImpl implements UserService{
 		
 		
 		User savedUser = userRepo.save(newUser);
+//		send email alert to the user
+		
+		EmailDetails emailDetails = EmailDetails.builder()
+				.recipient(savedUser.getEmail())
+				.subject("Account created successfully.")
+				.messageBody("Congrats " + savedUser.getFirstName()+ " " + savedUser.getLastName() + " your account has been created successfully\n"
+						+ "Your Account no. is : " + savedUser.getAccountNumber())
+				.build();
+		
+		emailService.sendEmailAlert(emailDetails);
 		
 		return BankResponse.builder()
 				.responseCode(AccountUtils.ACCOUNT_CREATED_CODE)
