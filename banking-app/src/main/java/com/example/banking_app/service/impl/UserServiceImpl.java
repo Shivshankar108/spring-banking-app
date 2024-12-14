@@ -1,7 +1,6 @@
 package com.example.banking_app.service.impl;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +10,7 @@ import com.example.banking_app.dto.BankResponse;
 import com.example.banking_app.dto.CreditAndDebitRequest;
 import com.example.banking_app.dto.EmailDetails;
 import com.example.banking_app.dto.EnquiryRequest;
+import com.example.banking_app.dto.TransferRequest;
 import com.example.banking_app.dto.UserRequest;
 import com.example.banking_app.entity.User;
 import com.example.banking_app.repository.UserRepo;
@@ -193,6 +193,66 @@ public class UserServiceImpl implements UserService{
 						.accountNumber(userToDebit.getAccountNumber())
 						.accountbalance(userToDebit.getAccountBalance())
 						.build())
+				.build();
+	}
+
+
+	@Override
+	public BankResponse transferMoney(TransferRequest request) {
+		
+		boolean isSourceAccountExist = userRepo.existsByAccountNumber(request.getSourceAccountNumber());
+		boolean isDestinationAccountExist = userRepo.existsByAccountNumber(request.getDestinationAccountNumber());
+		
+		if(!isSourceAccountExist || !isDestinationAccountExist) {
+			return BankResponse.builder()
+					.responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
+					.responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
+					.accountInfo(null)
+					.build();
+		}
+		
+		User sourceAccountUser  = userRepo.findByAccountNumber(request.getSourceAccountNumber());
+		User destinationAccountUser  = userRepo.findByAccountNumber(request.getDestinationAccountNumber());
+		
+		BigDecimal availableAmount = sourceAccountUser.getAccountBalance();
+	    BigDecimal debitAmount = request.getAmount();
+
+	    // Compare the available balance and debit amount using compareTo()
+	    if (availableAmount.compareTo(debitAmount) < 0) {
+			return BankResponse.builder()
+					.responseCode(AccountUtils.INSUFFICIENT_BALANCE_CODE)
+					.responseMessage(AccountUtils.INSUFFICIENT_BALANCE_MESSAGE)
+					.accountInfo(null)
+					.build();
+		}
+	    
+	    sourceAccountUser.setAccountBalance(sourceAccountUser.getAccountBalance().subtract(request.getAmount()));
+	    userRepo.save(sourceAccountUser);
+	    
+	    EmailDetails debitAlert = EmailDetails.builder()
+	    		.subject("Debit Alert")
+	    		.recipient(sourceAccountUser.getEmail())
+	    		.messageBody("Your account no. "+ sourceAccountUser.getAccountNumber() + " has been debited " + request.getAmount() + " rupees.")
+	    		.build();
+	    
+	    emailService.sendEmailAlert(debitAlert);
+	    
+	    destinationAccountUser.setAccountBalance(destinationAccountUser.getAccountBalance().add(request.getAmount()));
+	    userRepo.save(destinationAccountUser);
+		
+	    EmailDetails creditAlert = EmailDetails.builder()
+	    		.subject("Credit Alert")
+	    		.recipient(destinationAccountUser.getEmail())
+	    		.messageBody("Your account no. "+ destinationAccountUser.getAccountNumber() + " has been credited " + request.getAmount() + " rupees.")
+	    		.build();
+	    
+	    emailService.sendEmailAlert(creditAlert);
+	    
+	    
+		return BankResponse.builder()
+				.responseCode(AccountUtils.TRANSFER_SUCCESSFUL_CODE)
+				.responseMessage(AccountUtils.TRANSFER_SUCCESSFUL_MESSAGE)
+				.accountInfo(null)
 				.build();
 	}
 

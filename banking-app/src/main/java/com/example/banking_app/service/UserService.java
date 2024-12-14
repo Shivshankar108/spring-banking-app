@@ -3,6 +3,7 @@ package com.example.banking_app.service;
 import com.example.banking_app.dto.BankResponse;
 import com.example.banking_app.dto.CreditAndDebitRequest;
 import com.example.banking_app.dto.EnquiryRequest;
+import com.example.banking_app.dto.TransferRequest;
 import com.example.banking_app.dto.UserRequest;
 
 public interface UserService {
@@ -16,4 +17,6 @@ public interface UserService {
 	BankResponse creditAccount(CreditAndDebitRequest request);
 	
 	BankResponse debitAccount(CreditAndDebitRequest request);
+	
+	BankResponse transferMoney(TransferRequest request);
 }
