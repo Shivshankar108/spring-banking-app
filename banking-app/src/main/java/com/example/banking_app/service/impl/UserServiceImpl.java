@@ -10,11 +10,13 @@ import com.example.banking_app.dto.BankResponse;
 import com.example.banking_app.dto.CreditAndDebitRequest;
 import com.example.banking_app.dto.EmailDetails;
 import com.example.banking_app.dto.EnquiryRequest;
+import com.example.banking_app.dto.TransactionDto;
 import com.example.banking_app.dto.TransferRequest;
 import com.example.banking_app.dto.UserRequest;
 import com.example.banking_app.entity.User;
 import com.example.banking_app.repository.UserRepo;
 import com.example.banking_app.service.EmailService;
+import com.example.banking_app.service.TransactionService;
 import com.example.banking_app.service.UserService;
 import com.example.banking_app.utils.AccountUtils;
 
@@ -22,14 +24,18 @@ import com.example.banking_app.utils.AccountUtils;
 @Service
 public class UserServiceImpl implements UserService{
 
-	@Autowired
 	UserRepo userRepo;
 	
-	@Autowired
-	EmailService emailService;
+	TransactionService transactionService;
 	
-	public UserServiceImpl(UserRepo userRepo) {
+	EmailService emailService;
+
+	@Autowired
+	public UserServiceImpl(UserRepo userRepo, TransactionService transactionService, EmailService emailService) {
+		super();
 		this.userRepo = userRepo;
+		this.transactionService = transactionService;
+		this.emailService = emailService;
 	}
 
 
@@ -128,6 +134,7 @@ public class UserServiceImpl implements UserService{
 
 	@Override
 	public BankResponse creditAccount(CreditAndDebitRequest request) {
+//		Checking if Account exists
 		boolean isAccountExist = userRepo.existsByAccountNumber(request.getAccountNumber());
 				
 		if(!isAccountExist) {
@@ -141,7 +148,17 @@ public class UserServiceImpl implements UserService{
 		userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
 		
 		userRepo.save(userToCredit);
-			
+		
+//		Save Transaction
+		TransactionDto transactionDto = TransactionDto.builder()
+				.accountNumber(userToCredit.getAccountNumber())
+				.transactionType("CREDIT")
+				.amount(request.getAmount())
+				.status("")
+				.build();
+		
+		transactionService.saveTransaction(transactionDto);
+		
 		return BankResponse.builder()
 				.responseCode(AccountUtils.ACCOUNT_CREDITED_SUCCESS_CODE)
 				.responseMessage(AccountUtils.ACCOUNT_CREDITED_SUCCESS_MESSAGE)
@@ -184,6 +201,17 @@ public class UserServiceImpl implements UserService{
 		
 		userToDebit.setAccountBalance(userToDebit.getAccountBalance().subtract(request.getAmount()));
 		userRepo.save(userToDebit);
+		
+//		Save Transaction
+		TransactionDto transactionDto = TransactionDto.builder()
+				.accountNumber(userToDebit.getAccountNumber())
+				.transactionType("DEBIT")
+				.amount(request.getAmount())
+				.status("")
+				.build();
+		
+		transactionService.saveTransaction(transactionDto);
+		
 		
 		return BankResponse.builder()
 				.responseCode(AccountUtils.ACCOUNT_DEBITED_SUCCESS_CODE)
@@ -248,6 +276,15 @@ public class UserServiceImpl implements UserService{
 	    
 	    emailService.sendEmailAlert(creditAlert);
 	    
+//		Save Transaction
+		TransactionDto transactionDto = TransactionDto.builder()
+				.accountNumber(destinationAccountUser.getAccountNumber())
+				.transactionType("DEBIT")
+				.amount(request.getAmount())
+				.status("")
+				.build();
+		
+		transactionService.saveTransaction(transactionDto);
 	    
 		return BankResponse.builder()
 				.responseCode(AccountUtils.TRANSFER_SUCCESSFUL_CODE)
