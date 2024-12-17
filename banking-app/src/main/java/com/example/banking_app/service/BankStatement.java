@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.banking_app.dto.EmailDetails;
 import com.example.banking_app.entity.Transaction;
 import com.example.banking_app.entity.User;
 import com.example.banking_app.repository.TransactionRepo;
@@ -37,6 +38,8 @@ public class BankStatement {
 	
 	private UserRepo userRepo;
 	
+	private EmailService emailService;
+	
 	private static final String FILE = "C:\\Users\\shank\\Documents\\MyStatement.pdf";
 	
 	
@@ -62,6 +65,15 @@ public class BankStatement {
 		
 //		calling the pdf generating function		
 		designStatement(user,transactionList, start, end);
+		
+		EmailDetails emailDetails = EmailDetails.builder()
+				.recipient(user.getEmail())
+				.subject("STATEMENT OF ACCOUNT")
+				.messageBody("Kindly find your requested acount statement attached!")
+				.attachment(FILE)
+				.build();
+		
+		emailService.sendEmailWithAttachment(emailDetails);
 		
 		return transactionList;
 	}
