@@ -3,16 +3,23 @@ package com.example.banking_app.service.impl;
 import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.banking_app.config.JwtTokenProvider;
 import com.example.banking_app.dto.AccountInfo;
 import com.example.banking_app.dto.BankResponse;
 import com.example.banking_app.dto.CreditAndDebitRequest;
 import com.example.banking_app.dto.EmailDetails;
 import com.example.banking_app.dto.EnquiryRequest;
+import com.example.banking_app.dto.LoginDto;
 import com.example.banking_app.dto.TransactionDto;
 import com.example.banking_app.dto.TransferRequest;
 import com.example.banking_app.dto.UserRequest;
+import com.example.banking_app.entity.Role;
 import com.example.banking_app.entity.User;
 import com.example.banking_app.repository.UserRepo;
 import com.example.banking_app.service.EmailService;
@@ -20,23 +27,45 @@ import com.example.banking_app.service.TransactionService;
 import com.example.banking_app.service.UserService;
 import com.example.banking_app.utils.AccountUtils;
 
+import lombok.AllArgsConstructor;
+
 
 @Service
+@AllArgsConstructor
 public class UserServiceImpl implements UserService{
 
+	
+	@Autowired
 	UserRepo userRepo;
 	
+	@Autowired
 	TransactionService transactionService;
-	
+
+	@Autowired
 	EmailService emailService;
 
 	@Autowired
-	public UserServiceImpl(UserRepo userRepo, TransactionService transactionService, EmailService emailService) {
-		super();
-		this.userRepo = userRepo;
-		this.transactionService = transactionService;
-		this.emailService = emailService;
-	}
+	PasswordEncoder passwordEncoder;
+	
+	@Autowired
+	AuthenticationManager authenticationManager;
+	
+	@Autowired
+	JwtTokenProvider jwtTokenProvider;
+
+	
+//	public UserServiceImpl() {
+//	}
+//	
+//	
+//	@Autowired
+//	public UserServiceImpl(UserRepo userRepo, TransactionService transactionService, EmailService emailService,PasswordEncoder passwordEncoder) {
+//		super();
+//		this.userRepo = userRepo;
+//		this.transactionService = transactionService;
+//		this.emailService = emailService;
+//		this.passwordEncoder = passwordEncoder; 
+//	}
 
 
 	@Override
@@ -60,8 +89,10 @@ public class UserServiceImpl implements UserService{
 				.accountNumber(AccountUtils.generateAccountNumber())
 				.accountBalance(BigDecimal.ZERO)
 				.email(userRequest.getEmail())
+				.password(passwordEncoder.encode(userRequest.getPassword()))
 				.phoneNumber(userRequest.getPhoneNumber())
 				.status("ACTIVE")
+				.role(Role.valueOf("ROLE_ADMIN"))
 				.build();
 		
 		
@@ -88,7 +119,29 @@ public class UserServiceImpl implements UserService{
 				.build();
 	}
 
-
+	@Override
+	public BankResponse login(LoginDto loginDto) {
+		
+		Authentication authentication = null;
+		authentication = authenticationManager.authenticate(
+				new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+		);
+		
+		EmailDetails loginAlert = EmailDetails.builder()
+				.subject("You're logged in!")
+				.recipient(loginDto.getEmail())
+				.messageBody("You logged into your account. If you did not initiate this request, please contact your bank.")
+				.build();
+		
+		emailService.sendEmailAlert(loginAlert);
+		
+		return BankResponse.builder()
+				.responseCode("Login Success")
+				.responseMessage(jwtTokenProvider.generateToken(authentication))
+				.build();
+	}
+	
+	
 	@Override
 	public BankResponse balanceEnquiry(EnquiryRequest request) {
 //		check if the provided account num exists in db
@@ -293,4 +346,5 @@ public class UserServiceImpl implements UserService{
 				.build();
 	}
 
+	
 }
