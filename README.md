@@ -1,15 +1,18 @@
 **Banking Application**
 
 **Overview**
+
 This project is a secure **Banking Application** developed using **Spring Boot**. The application allows users to manage their accounts, view transaction history, and receive transaction receipts in PDF format. The application leverages various technologies such as **iTextPDF** for PDF generation, **Spring Security** for secure authentication and authorization, and **Spring Repositories** for email notifications.
 
 **Features**
+
 **Transaction Receipt Generation:** Generate transaction receipts as PDFs using **iTextPDF**, making it easy for users to keep track of their financial activities.
 **Email Notifications:** Integrated with **Spring Repositories** to send email notifications with PDF attachments to users, providing them with real-time updates on transactions.
 **Secure Authentication and Authorization:** Implemented **Spring Security** to ensure secure user authentication and role-based access control, allowing users to access only authorized resources based on their roles.
 **API Documentation:** Utilized **Swagger2** for generating comprehensive and easy-to-understand API documentation, enabling seamless integration and testing.
 
 **Technologies Used**
+
 **Spring Boot:** The core framework for building the banking application, providing the backbone for all features.
 **iTextPDF:** A library used for generating PDF documents, specifically for creating transaction receipts.
 **Spring Security:** Used to implement user authentication and role-based access control, ensuring data privacy and secure access.
