@@ -1,4 +1,5 @@
 **Banking Application**
+
 **Overview**
 This project is a secure **Banking Application** developed using **Spring Boot**. The application allows users to manage their accounts, view transaction history, and receive transaction receipts in PDF format. The application leverages various technologies such as **iTextPDF** for PDF generation, **Spring Security** for secure authentication and authorization, and **Spring Repositories** for email notifications.
 
